@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:mvc="http://www.springframework.org/schema/mvc"
+       xmlns:context="http://www.springframework.org/schema/context"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:aop="http://www.springframework.org/schema/aop"
+       xsi:schemaLocation="
+           http://www.springframework.org/schema/beans
+           http://www.springframework.org/schema/beans/spring-beans.xsd
+           http://www.springframework.org/schema/mvc
+           http://www.springframework.org/schema/mvc/spring-mvc.xsd
+           http://www.springframework.org/schema/context
+           http://www.springframework.org/schema/context/spring-context.xsd
+           http://www.springframework.org/schema/aop
+		http://www.springframework.org/schema/aop/spring-aop.xsd
+           ">
+
+    <context:component-scan base-package="com.SH.Controller"/>
+
+
+    <!--
+    支持AOP的注解支持，AOP底层使用代理技术
+    JDK动态代理，要求必须有接口
+    cglib代理，生成子类对象，proxy-target-class="true" 默认使用cglib的方式
+    -->
+    <aop:aspectj-autoproxy proxy-target-class="true"/>
+
+    <bean id="internalResolver" class="org.springframework.web.servlet.view.InternalResourceViewResolver">
+        <property name="prefix" value="/page/"/>
+        <property name="suffix" value=".jsp"/>
+    </bean>
+
+    <!-- 设置静态资源不过滤 -->
+    <mvc:resources location="/css/" mapping="/css/**" />
+    <mvc:resources location="/img/" mapping="/img/**" />
+<!--    <mvc:resources location="/js/" mapping="/js/**" />-->
+    <mvc:resources location="/plugins/" mapping="/plugins/**" />
+
+    <mvc:default-servlet-handler/>
+
+    <!-- 配置类型转换器de固定步骤-->
+    <!--   01、 先将写好的转换器类放入IOC容器-->
+    <bean id="SToDateConvertor" class="com.SH.Converters.StringToDate"></bean>
+    <!--  02、 再将自定义的转换器设置到springMVC中的转换器里 -->
+    <!--    <bean id="springConvertors" class="org.springframework.context.support.ConversionServiceFactoryBean">这是转换器的类-->
+    <!--    由于数据格式化的类是.format.support.FormattingConversionServiceFactoryBean包括了转换器的类，所以可以用格式化的类同时实现两个功能-->
+    <bean id="springConvertors" class="org.springframework.format.support.FormattingConversionServiceFactoryBean">
+        <property name="converters" >
+            <set>
+                <ref bean="SToDateConvertor"/>
+            </set>
+        </property>
+    </bean>
+    <!-- 03、 在<mvc:annotation-driven>里的conversion-service注册 02的bean  -->
+    <!-- 开启对SpringMVC注解的支持 -->
+    <mvc:annotation-driven  conversion-service="springConvertors"/>
+
+    <!--    数据格式化，配置数据格式化的Bean(见类型转换器)后，在Contoller写个注解就行了。好像只有日期和数字可以格式化分别是@DateTimeFormat（pattern="yyyy-MM-dd"）和@NumberFormat(pattern="###,#")-->
+</beans>

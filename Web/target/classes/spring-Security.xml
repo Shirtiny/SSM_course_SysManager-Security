@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:security="http://www.springframework.org/schema/security"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans
+    http://www.springframework.org/schema/beans/spring-beans.xsd
+    http://www.springframework.org/schema/security
+    http://www.springframework.org/schema/security/spring-security.xsd">
+
+
+<!--    不拦截的资源-->
+    <security:http pattern="/css/**" security="none"/>
+    <security:http pattern="/img/**" security="none"/>
+    <security:http pattern="/plugins/**" security="none"/>
+    <security:http pattern="/page/login.jsp" security="none"/>
+    <security:http pattern="/page/fail.jsp" security="none"/>
+
+
+    <!--
+    	配置具体的规则
+    	auto-config="true"	不用自己编写登录的页面，框架提供默认登录页面
+    	use-expressions="false"	是否使用SPEL表达式
+    -->
+    <security:http auto-config="true" use-expressions="false">
+
+        <!--  限制用户添加页面的访问角色 ，小范围在前，大范围在后     -->
+        <security:intercept-url pattern="/page/user-add.jsp" access="ROLE_GM"/>
+        <!-- 配置具体的拦截的规则 pattern="请求路径的规则" access="访问系统的人，必须有USER或GM的角色，ROLE_ 是框架需要的前缀" -->
+        <security:intercept-url pattern="/**" access="ROLE_USER,ROLE_GM"/>
+
+        <!-- 设置跳转的页面       -->
+        <security:form-login
+                login-page="/page/login.jsp" login-processing-url="/login.action"
+                default-target-url="/page/main.jsp"
+                authentication-failure-url="/page/fail.jsp" authentication-success-forward-url="/page/main.jsp"
+                username-parameter="username" password-parameter="password"
+                />
+
+        <!-- 关闭跨域请求 -->
+        <security:csrf disabled="true"/>
+        <!-- 退出 -->
+        <security:logout invalidate-session="true" logout-url="/logout.action" logout-success-url="/page/login.jsp" />
+
+    </security:http>
+
+
+
+    <!-- 切换成数据库中的用户名和密码 -->
+    <security:authentication-manager>
+    <security:authentication-provider user-service-ref="userService">
+        <!-- 配置加密的方式，引用上面配置的加密类，指定密码被加密的方式，框架才能识别，以便找到合适的密码验证方式，不然会报There is no PasswordEncoder mapped for the id "null"-->
+        <!--    注意！若在xml中配置了加密类，{id}(密码前加{noop}、{bcrypt}等)将不可用，框架会直接使用指定加密类匹配字符串，不会再判断字符串加密类型    -->
+<!--        <security:password-encoder ref="passwordEncoder"/>-->
+    </security:authentication-provider>
+</security:authentication-manager>
+
+    <!-- 配置加密类，存储密码明文的加盐哈希 hash(m+salt)，不可逆加密，验证时匹配哈希值,注意，此项放在 <security:authentication-manager>前会在密码验证时影响{id}是否使用 -->
+    <bean id="passwordEncoder" class="org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder"/>
+
+
+<!--    启用注解,用于进行权限控制-->
+<!--    JSR250注解,secured注解,支持spel表达式的注解-->
+<security:global-method-security jsr250-annotations="enabled" secured-annotations="enabled" pre-post-annotations="enabled"/>
+
+
+    <!-- 提供了入门的方式，在内存中存入用户名和密码 -->
+<!--    <security:authentication-manager>-->
+<!--    	<security:authentication-provider>-->
+<!--    		<security:user-service>-->
+<!--    			<security:user name="sh" password="{noop}123" authorities="ROLE_USER"/>-->
+<!--    		</security:user-service>-->
+<!--    	</security:authentication-provider>-->
+<!--    </security:authentication-manager>-->
+
+
+
+</beans>
